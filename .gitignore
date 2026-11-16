@@ -1,0 +1,6 @@
+# Local environment file with credentials — never commit.
+.env
+
+# OS / editor cruft
+.DS_Store
+*.swp

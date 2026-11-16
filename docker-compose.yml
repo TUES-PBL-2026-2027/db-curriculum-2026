@@ -1,0 +1,42 @@
+# PostgreSQL for the DB curriculum.
+#
+# Persistence: data lives in the named volume `storefront_pgdata`, NOT inside the
+# container. `docker compose stop/start` and `down/up` all KEEP your data.
+# It is only erased by an explicit `docker compose down -v`.
+#
+# Quick start:
+#   cp .env.example .env        # once
+#   docker compose up -d        # build + start, data persists across restarts
+#   docker compose exec db psql -U postgres -d storefront
+#
+# See docker/README.md for the full workflow.
+
+services:
+  db:
+    build: .
+    image: db-curriculum-postgres:18
+    container_name: db-curriculum
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-storefront}
+    ports:
+      # host:container — change the host side in .env if 5432 is taken locally.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Persistent data directory (survives restarts; removed only with `down -v`).
+      # NOTE: Postgres 18's PGDATA is /var/lib/postgresql/18/docker and the image
+      # declares its volume at /var/lib/postgresql — so we persist that whole dir.
+      - storefront_pgdata:/var/lib/postgresql
+      # Mount the repo read-only so you can `psql -f` any lesson from inside the container.
+      - ./:/curriculum:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-storefront}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  storefront_pgdata:
+    name: storefront_pgdata
